@@ -1,0 +1,45 @@
+# BulkRNA Agent Conda Environment
+# Create with: conda env create -f environment.yml
+# Activate with: conda activate bulkrna-agent
+
+name: bulkrna-agent
+
+channels:
+  - conda-forge
+  - bioconda
+  - defaults
+
+dependencies:
+  # Python
+  - python=3.11
+  - pip>=24.0
+  
+  # Core scientific computing
+  - numpy>=1.24.0
+  - pandas>=2.0.0
+  - scipy>=1.10.0
+  - scikit-learn>=1.3.0
+  
+  # Visualization
+  - matplotlib>=3.7.0
+  - seaborn>=0.12.0
+  - plotly>=5.17.0
+  
+  # Bioinformatics (Python)
+  - bioconda::pydeseq2>=0.4.0
+  
+  # Web interface
+  - pip:
+    - gradio>=4.0.0
+    - python-dotenv>=1.0.0
+  
+  # R and Bioconductor (optional but recommended)
+  - r-base>=4.3.0
+  - bioconda::bioconductor-deseq2
+  - bioconda::bioconductor-edger
+  - bioconda::bioconductor-limma
+  - bioconda::bioconductor-clusterprofiler
+  
+  # Testing
+  - pytest>=7.4.0
+  - pytest-cov>=4.1.0
