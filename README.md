@@ -2,6 +2,12 @@
 
 AI-powered bulk RNA-seq analysis tool with interactive web interface. Perform comprehensive transcriptomics analysis from QC to enrichment analysis with dual LLM system for intelligent insights.
 
+## 🎥 Demo
+
+https://github.com/user-attachments/assets/d0b3d0e5-8b8a-4e1e-9c4f-2a3e5f6b7c8d
+
+> Watch the complete workflow from data upload to enrichment analysis
+
 ## ✨ Features
 
 - **Quality Control**: Automated filtering, PCA visualization, and RNAseqQC plots
