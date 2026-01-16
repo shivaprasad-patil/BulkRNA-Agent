@@ -414,19 +414,19 @@ class BulkRNAWebInterface:
             logger.error(f"Error in DE analysis: {e}", exc_info=True)
             return f"❌ Error: {str(e)}"
     
-    def run_enrichment(self, contrast: str = None, progress=gr.Progress()) -> Tuple[str, str]:
+    def run_enrichment(self, contrast: str = None, progress=gr.Progress()) -> Tuple[str, gr.Dropdown, str]:
         """Run enrichment analysis for selected contrast"""
         try:
             progress(0, desc="Preparing gene list...")
             if self.de_results is None:
-                return "❌ Please run differential expression analysis first", ""
+                return "❌ Please run differential expression analysis first", gr.Dropdown(choices=[]), ""
             
             # Use selected contrast or first available
             if not contrast and self.available_contrasts:
                 contrast = self.available_contrasts[0]
             
             if not contrast:
-                return "❌ No contrasts available", ""
+                return "❌ No contrasts available", gr.Dropdown(choices=[]), ""
             
             logger.info(f"Running enrichment analysis for contrast: {contrast}")
             
@@ -437,13 +437,13 @@ class BulkRNAWebInterface:
             sig_genes_path = Path(self.config.data.output_dir) / "de_analysis" / sig_genes_file
             
             if not sig_genes_path.exists():
-                return f"❌ Significant genes file not found for contrast: {contrast}", ""
+                return f"❌ Significant genes file not found for contrast: {contrast}", gr.Dropdown(choices=[]), ""
             
             df = pd.read_csv(sig_genes_path, index_col=0)
             gene_list = df.index.tolist()
             
             if len(gene_list) == 0:
-                return f"❌ No significant genes found for contrast: {contrast}", ""
+                return f"❌ No significant genes found for contrast: {contrast}", gr.Dropdown(choices=[]), ""
             
             progress(0.3, desc="Querying enrichment databases...")
             tool = self.tools["enrichment_analysis"]
@@ -458,6 +458,9 @@ class BulkRNAWebInterface:
                 # Check if we got any results
                 has_results = any(len(r) > 0 for r in result.get('results', {}).values())
                 
+                # Get list of databases with results
+                db_list = [db for db, data in result.get('results', {}).items() if len(data) > 0]
+                
                 if has_results:
                     message = f"""
 ✅ **Enrichment Analysis Complete**
@@ -467,6 +470,11 @@ class BulkRNAWebInterface:
 **Databases queried:** {', '.join(result['databases'])}
 **Results saved to:** `{result['output_dir']}`
 """
+                    # Update dropdown with available databases
+                    db_dropdown = gr.Dropdown(choices=db_list, value=db_list[0] if db_list else None)
+                    # Generate HTML display for first database
+                    html_results = self._format_single_database_html(result, db_list[0] if db_list else None)
+                    return message, db_dropdown, html_results
                 else:
                     message = f"""
 ⚠️ **Enrichment Analysis Complete - No Significant Terms Found**
@@ -480,22 +488,124 @@ No significantly enriched terms were found in any database. This could mean:
 - The genes don't cluster into known pathways
 - Try adjusting your DE thresholds to get more genes
 """
-                
-                # Generate HTML display
-                html_results = self._format_enrichment_html(result)
-                return message, html_results
+                    return message, gr.Dropdown(choices=[]), ""
             else:
-                return f"❌ Enrichment analysis failed: {result.get('message', 'Unknown error')}", ""
+                return f"❌ Enrichment analysis failed: {result.get('message', 'Unknown error')}", gr.Dropdown(choices=[]), ""
                 
         except Exception as e:
             logger.error(f"Error in enrichment: {e}", exc_info=True)
-            return f"❌ Error: {str(e)}", ""
+            return f"❌ Error: {str(e)}", gr.Dropdown(choices=[]), ""
+    
+    def display_enrichment_database(self, database: str) -> str:
+        """Display results for a specific enrichment database"""
+        try:
+            if self.enrichment_results is None:
+                return "<p>No enrichment results available. Please run enrichment analysis first.</p>"
+            
+            if database is None:
+                return "<p>Please select a database to view results.</p>"
+            
+            return self._format_single_database_html(self.enrichment_results, database)
+            
+        except Exception as e:
+            logger.error(f"Error displaying database {database}: {e}", exc_info=True)
+            return f"<p>Error displaying results: {str(e)}</p>"
+    
+    def _format_single_database_html(self, results: Dict[str, Any], database: str) -> str:
+        """Format enrichment results for a single database as HTML"""
+        try:
+            if 'results' not in results or database not in results['results']:
+                return "<p>No results available for this database</p>"
+            
+            enrich_data = results['results'][database]
+            
+            if not enrich_data:
+                return f"<p>No enrichment terms found in {database}</p>"
+            
+            df = pd.DataFrame(enrich_data)
+            if df.empty:
+                return f"<p>No enrichment terms found in {database}</p>"
+            
+            # Ensure sorted by p-value (ascending - most significant first)
+            if 'p_value' in df.columns:
+                df = df.sort_values('p_value')
+            
+            # Format columns for better display
+            display_df = df.copy()
+            
+            if 'adjusted_p_value' in display_df.columns:
+                display_df['Adjusted P-value'] = display_df['adjusted_p_value'].apply(lambda x: f"{x:.2e}")
+                display_df = display_df.drop('adjusted_p_value', axis=1)
+            if 'p_value' in display_df.columns:
+                display_df['P-value'] = display_df['p_value'].apply(lambda x: f"{x:.2e}")
+                display_df = display_df.drop('p_value', axis=1)
+            if 'combined_score' in display_df.columns:
+                display_df['Combined Score'] = display_df['combined_score'].apply(lambda x: f"{x:.2f}")
+                display_df = display_df.drop('combined_score', axis=1)
+            
+            # Rename columns for clarity
+            if 'term' in display_df.columns:
+                display_df = display_df.rename(columns={'term': 'Term'})
+            if 'genes' in display_df.columns:
+                display_df = display_df.rename(columns={'genes': 'Genes'})
+            
+            # Create HTML with styling
+            html = f"""
+            <style>
+                .enrich-table {{
+                    width: 100%;
+                    border-collapse: collapse;
+                    font-size: 12px;
+                }}
+                .enrich-table th {{
+                    background: #3498db;
+                    color: white;
+                    padding: 12px 8px;
+                    text-align: left;
+                    border-bottom: 2px solid #2980b9;
+                    position: sticky;
+                    top: 0;
+                    font-weight: 600;
+                    z-index: 10;
+                }}
+                .enrich-table td {{
+                    padding: 8px;
+                    border-bottom: 1px solid #ddd;
+                    background: white;
+                }}
+                .enrich-table tr:hover td {{
+                    background: #f0f8ff;
+                }}
+            </style>
+            <h3>{database} ({len(display_df)} terms, sorted by P-value)</h3>
+            <div style="max-height: 600px; overflow-y: auto;">
+            """
+            
+            html += display_df.to_html(
+                classes='enrich-table',
+                border=0,
+                index=False,
+                escape=False
+            )
+            
+            html += "</div>"
+            
+            return html
+            
+        except Exception as e:
+            logger.error(f"Error formatting database {database}: {e}", exc_info=True)
+            return f"<p>Error formatting results: {str(e)}</p>"
     
     def _format_enrichment_html(self, results: Dict[str, Any]) -> str:
         """Format enrichment results as HTML with tabs for each database"""
         try:
             if 'results' not in results:
                 return "<p>No detailed results available</p>"
+            
+            # Debug: Log what databases we have and their sizes
+            logger.info(f"Formatting enrichment results for databases: {list(results['results'].keys())}")
+            for db, data in results['results'].items():
+                logger.info(f"  {db}: {len(data)} results")
             
             # Check if any database returned results
             has_results = any(len(r) > 0 for r in results['results'].values())
@@ -514,35 +624,43 @@ No significantly enriched terms were found in any database. This could mean:
                 </div>
                 """
             
-            # Create tabbed interface
+            # Create tabbed interface using CSS-only approach with radio buttons
             html = """
             <style>
+                .enrich-tab-container {
+                    width: 100%;
+                }
+                .enrich-tab-radio {
+                    display: none;
+                }
                 .enrich-tabs {
                     display: flex;
                     border-bottom: 2px solid #ddd;
                     margin-bottom: 20px;
+                    flex-wrap: wrap;
                 }
-                .enrich-tab {
+                .enrich-tab-label {
                     padding: 10px 20px;
                     cursor: pointer;
-                    border: none;
                     background: #f8f9fa;
                     margin-right: 2px;
                     border-radius: 5px 5px 0 0;
+                    user-select: none;
+                    transition: background 0.2s;
                 }
-                .enrich-tab:hover {
+                .enrich-tab-label:hover {
                     background: #e9ecef;
                 }
-                .enrich-tab.active {
+                .enrich-tab-radio:checked + .enrich-tab-label {
                     background: white;
-                    border-bottom: 2px solid white;
                     font-weight: bold;
+                    border-bottom: 2px solid white;
                 }
                 .enrich-content {
                     display: none;
                 }
-                .enrich-content.active {
-                    display: block;
+                .enrich-tab-radio:checked ~ .enrich-tab-contents .enrich-content[data-tab] {
+                    display: none;
                 }
                 .enrich-table {
                     width: 100%;
@@ -550,11 +668,11 @@ No significantly enriched terms were found in any database. This could mean:
                     font-size: 12px;
                 }
                 .enrich-table th {
-                    background: #2c3e50;
+                    background: #3498db;
                     color: white;
                     padding: 12px 8px;
                     text-align: left;
-                    border-bottom: 2px solid #34495e;
+                    border-bottom: 2px solid #2980b9;
                     position: sticky;
                     top: 0;
                     font-weight: 600;
@@ -569,27 +687,37 @@ No significantly enriched terms were found in any database. This could mean:
                     background: #f0f8ff;
                 }
             </style>
+            <div class="enrich-tab-container">
             <div class="enrich-tabs">
             """
             
-            # Create tabs
+            # Create tabs with radio buttons
             db_list = [db for db, data in results['results'].items() if len(data) > 0]
             for idx, database in enumerate(db_list):
-                active = 'active' if idx == 0 else ''
-                html += f'<div class="enrich-tab {active}" onclick="showEnrichTab(\'{database}\')">{database}</div>'
+                safe_db_name = database.replace(' ', '_').replace('-', '_').replace('(', '').replace(')', '')
+                checked = 'checked' if idx == 0 else ''
+                html += f'''
+                <input type="radio" id="tab_{safe_db_name}" name="enrich-tabs" class="enrich-tab-radio" {checked}>
+                <label for="tab_{safe_db_name}" class="enrich-tab-label">{database}</label>
+                '''
             
-            html += "</div>"
+            html += "</div><div class='enrich-tab-contents'>"
             
-            # Create content for each database
-            for idx, (database, enrich_data) in enumerate(results['results'].items()):
-                if not enrich_data:
-                    continue
+            # Create content for each database - USE THE SAME db_list TO ENSURE CONSISTENCY
+            for idx, database in enumerate(db_list):
+                enrich_data = results['results'][database]
+                
+                # Debug log
+                logger.info(f"Creating content for {database}: {len(enrich_data)} results")
+                if enrich_data:
+                    first_term = enrich_data[0].get('term', 'N/A') if enrich_data else 'N/A'
+                    logger.info(f"  First term for {database}: {first_term}")
                 
                 df = pd.DataFrame(enrich_data)
                 if df.empty:
                     continue
                 
-                active = 'active' if idx == 0 else ''
+                safe_db_name = database.replace(' ', '_').replace('-', '_').replace('(', '').replace(')', '')
                 
                 # Show ALL results (not just top 50), already sorted by p-value from tool
                 display_df = df.copy()
@@ -615,8 +743,9 @@ No significantly enriched terms were found in any database. This could mean:
                 if 'genes' in display_df.columns:
                     display_df = display_df.rename(columns={'genes': 'Genes'})
                 
-                html += f'<div id="{database}" class="enrich-content {active}">'
+                html += f'<div class="enrich-content" data-tab="{safe_db_name}" style="display: {"block" if idx == 0 else "none"};">'
                 html += f"<h3>{database} ({len(display_df)} terms, sorted by P-value)</h3>"
+                html += f'<p style="font-size: 10px; color: #666;">DEBUG: Database={database}, SafeName={safe_db_name}, First term={display_df.iloc[0]["Term"] if "Term" in display_df.columns and len(display_df) > 0 else "N/A"}</p>'
                 html += '<div style="max-height: 600px; overflow-y: auto;">'
                 html += display_df.to_html(
                     classes='enrich-table',
@@ -626,24 +755,30 @@ No significantly enriched terms were found in any database. This could mean:
                 )
                 html += "</div></div>"
             
-            # Add JavaScript for tab switching
+            html += "</div></div>"
+            
+            # Add JavaScript to handle tab switching (fallback if CSS doesn't work)
             html += """
             <script>
-                function showEnrichTab(tabName) {
-                    // Hide all content
-                    var contents = document.getElementsByClassName('enrich-content');
-                    for (var i = 0; i < contents.length; i++) {
-                        contents[i].classList.remove('active');
-                    }
-                    // Remove active from all tabs
-                    var tabs = document.getElementsByClassName('enrich-tab');
-                    for (var i = 0; i < tabs.length; i++) {
-                        tabs[i].classList.remove('active');
-                    }
-                    // Show selected content and activate tab
-                    document.getElementById(tabName).classList.add('active');
-                    event.target.classList.add('active');
-                }
+            (function() {
+                var radios = document.querySelectorAll('input[name="enrich-tabs"]');
+                radios.forEach(function(radio) {
+                    radio.addEventListener('change', function() {
+                        // Hide all content
+                        var contents = document.querySelectorAll('.enrich-content');
+                        contents.forEach(function(content) {
+                            content.style.display = 'none';
+                        });
+                        
+                        // Show the selected content
+                        var tabId = this.id.replace('tab_', '');
+                        var targetContent = document.querySelector('.enrich-content[data-tab="' + tabId + '"]');
+                        if (targetContent) {
+                            targetContent.style.display = 'block';
+                        }
+                    });
+                });
+            })();
             </script>
             """
             
@@ -1082,15 +1217,17 @@ tryCatch({{
             # Get response from agent
             response = self.agent.chat(message)
             
-            # Update history
-            history.append((message, response))
+            # Update history with proper message format
+            history.append({"role": "user", "content": message})
+            history.append({"role": "assistant", "content": response})
             
             return "", history
             
         except Exception as e:
             logger.error(f"Error in chat: {e}", exc_info=True)
             error_msg = f"❌ Error: {str(e)}"
-            history.append((message, error_msg))
+            history.append({"role": "user", "content": message})
+            history.append({"role": "assistant", "content": error_msg})
             return "", history
     
     def reset_chat(self) -> List:
@@ -1101,13 +1238,13 @@ tryCatch({{
     def create_interface(self) -> gr.Blocks:
         """Create Gradio interface"""
         
-        # Create theme with standard font
-        theme = gr.themes.Default(
+        # Create theme with standard font (will be passed to launch in Gradio 6.0+)
+        self.theme = gr.themes.Default(
             font=[gr.themes.GoogleFont("Inter"), "Arial", "sans-serif"],
             font_mono=[gr.themes.GoogleFont("IBM Plex Mono"), "Courier New", "monospace"]
         )
         
-        with gr.Blocks(title="BulkRNA Agent", theme=theme) as interface:
+        with gr.Blocks(title="BulkRNA Agent") as interface:
             gr.Markdown("""
 # 🧬 BulkRNA Agent
 ### AI-Powered Bulk RNA-seq Analysis
@@ -1285,15 +1422,31 @@ Upload your data, run analyses, and chat with the agent to explore your transcri
                     enrich_button = gr.Button("Run Enrichment Analysis", variant="primary")
                     enrich_output = gr.Markdown()
                     
-                    # Enrichment Results Display
+                    # Enrichment Results Display with Database Selector
                     gr.Markdown("### Enrichment Results")
+                    
+                    with gr.Row():
+                        enrich_db_dropdown = gr.Dropdown(
+                            label="Select Database",
+                            choices=["GO_Biological_Process_2021"],
+                            value="GO_Biological_Process_2021",
+                            info="Choose which enrichment database to view",
+                            interactive=True
+                        )
+                    
                     enrichment_results_html = gr.HTML()
                     
                     enrich_button.click(
                         fn=self.run_enrichment,
                         inputs=[enrich_contrast_dropdown],
-                        outputs=[enrich_output, enrichment_results_html],
+                        outputs=[enrich_output, enrich_db_dropdown, enrichment_results_html],
                         show_progress="full"
+                    )
+                    
+                    enrich_db_dropdown.change(
+                        fn=self.display_enrichment_database,
+                        inputs=[enrich_db_dropdown],
+                        outputs=[enrichment_results_html]
                     )
                 
                 # Now set up the DE button handler after enrichment dropdown is defined
@@ -1380,6 +1533,9 @@ Upload your data, run analyses, and chat with the agent to explore your transcri
     def launch(self, **kwargs):
         """Launch the interface"""
         interface = self.create_interface()
+        # Pass theme to launch for Gradio 6.0+ compatibility
+        if not kwargs.get('theme'):
+            kwargs['theme'] = self.theme
         interface.launch(**kwargs)
         
         # Cleanup on exit

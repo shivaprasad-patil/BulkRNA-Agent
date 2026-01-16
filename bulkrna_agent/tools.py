@@ -716,31 +716,118 @@ Respond in JSON format:
             response = self.llm_manager.generate(
                 prompt=prompt,
                 llm_type="reasoning",
-                system_prompt="You are an expert in RNA-seq experimental design and DESeq2 analysis."
+                system_prompt="You are an expert in RNA-seq experimental design and DESeq2 analysis. Always respond with valid JSON only."
             )
             
             # Parse JSON response
             # Try to extract JSON from response
             import re
-            json_match = re.search(r'\{.*\}', response, re.DOTALL)
-            if json_match:
-                suggestion = json.loads(json_match.group())
-            else:
-                # Fallback to simple design
-                logger.warning("Could not parse LLM response, using default")
-                suggestion = {
-                    "design_formula": "~ condition",
-                    "explanation": "Simple design with single condition factor",
-                    "contrasts": [["condition", "treated", "control"]]
-                }
             
-            return suggestion
+            # First, try to find JSON between ```json and ``` markers
+            json_match = re.search(r'```json\s*(\{.*?\})\s*```', response, re.DOTALL)
+            if not json_match:
+                # Try to find JSON between ``` markers
+                json_match = re.search(r'```\s*(\{.*?\})\s*```', response, re.DOTALL)
+            if not json_match:
+                # Try to find raw JSON
+                json_match = re.search(r'\{.*\}', response, re.DOTALL)
+            
+            if json_match:
+                json_str = json_match.group(1) if len(json_match.groups()) > 0 else json_match.group()
+                # Clean up common JSON issues
+                json_str = json_str.replace('\n', ' ').replace('\r', '')
+                # Remove trailing commas before closing braces/brackets
+                json_str = re.sub(r',\s*([}\]])', r'\1', json_str)
+                try:
+                    suggestion = json.loads(json_str)
+                    
+                    # Validate required fields
+                    if "design_formula" not in suggestion:
+                        raise ValueError("Missing design_formula in response")
+                    if "explanation" not in suggestion:
+                        suggestion["explanation"] = "Design suggested by LLM"
+                    if "contrasts" not in suggestion:
+                        # Try to infer contrasts from metadata
+                        suggestion["contrasts"] = self._infer_contrasts(metadata_df)
+                    
+                    return suggestion
+                except json.JSONDecodeError as je:
+                    logger.warning(f"JSON decode error: {je}. Response was: {response[:500]}")
+                    raise
+            else:
+                logger.warning("Could not find JSON in LLM response")
+                raise ValueError("No JSON found in response")
             
         except Exception as e:
-            logger.error(f"Error in LLM suggestion: {e}")
-            # Return default
+            logger.error(f"Error in LLM suggestion: {e}, using heuristic approach")
+            # Return intelligent default based on metadata
+            return self._generate_default_design(metadata_df)
+    
+    def _infer_contrasts(self, metadata_df: pd.DataFrame) -> list:
+        """Infer possible contrasts from metadata"""
+        contrasts = []
+        
+        # Look for categorical columns with 2-10 unique values
+        for col in metadata_df.columns:
+            unique_vals = metadata_df[col].unique()
+            if 2 <= len(unique_vals) <= 10:
+                # Add pairwise contrasts for this column
+                vals_list = sorted([str(v) for v in unique_vals])
+                if len(vals_list) >= 2:
+                    contrasts.append([col, vals_list[0], vals_list[1]])
+        
+        return contrasts if contrasts else [["condition", "group1", "group2"]]
+    
+    def _generate_default_design(self, metadata_df: pd.DataFrame) -> Dict[str, Any]:
+        """Generate intelligent default design based on metadata analysis"""
+        
+        # Find categorical columns (likely experimental factors)
+        categorical_cols = []
+        for col in metadata_df.columns:
+            unique_vals = metadata_df[col].unique()
+            n_unique = len(unique_vals)
+            # Consider it categorical if has 2-10 unique values
+            if 2 <= n_unique <= 10 and n_unique < len(metadata_df) * 0.5:
+                categorical_cols.append((col, n_unique))
+        
+        if not categorical_cols:
             return {
                 "design_formula": "~ condition",
-                "explanation": f"Default design (error: {str(e)})",
+                "explanation": "Default single-factor design. No clear categorical variables found. Please specify your experimental design manually.",
                 "contrasts": [["condition", "group1", "group2"]]
             }
+        
+        # Sort by number of unique values (assume fewer = main factor)
+        categorical_cols.sort(key=lambda x: x[1])
+        
+        # Check for common naming patterns
+        primary_factor = None
+        batch_factor = None
+        
+        for col, _ in categorical_cols:
+            col_lower = col.lower()
+            if any(term in col_lower for term in ['condition', 'treatment', 'group', 'genotype', 'tissue']):
+                primary_factor = col
+            elif any(term in col_lower for term in ['batch', 'replicate', 'plate', 'run']):
+                batch_factor = col
+        
+        # If no pattern match, use first column as primary
+        if primary_factor is None:
+            primary_factor = categorical_cols[0][0]
+        
+        # Build design formula
+        if batch_factor and len(categorical_cols) >= 2:
+            design_formula = f"~ {batch_factor} + {primary_factor}"
+            explanation = f"Multi-factor design with batch correction. '{batch_factor}' accounts for batch effects, '{primary_factor}' is the primary experimental condition."
+        else:
+            design_formula = f"~ {primary_factor}"
+            explanation = f"Single-factor design using '{primary_factor}' as the experimental condition."
+        
+        # Generate contrasts
+        contrasts = self._infer_contrasts(metadata_df)
+        
+        return {
+            "design_formula": design_formula,
+            "explanation": explanation,
+            "contrasts": contrasts
+        }
