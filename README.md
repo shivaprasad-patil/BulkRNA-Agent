@@ -5,10 +5,9 @@ AI-powered bulk RNA-seq analysis tool with interactive web interface. Perform co
 ## 🎥 Demo
 
 
+https://github.com/user-attachments/assets/88d02e07-7f4f-4166-b426-4f34d3c0fca6
 
-https://github.com/user-attachments/assets/PLACEHOLDER-REPLACE-THIS
-
-> Watch the complete workflow from data upload to enrichment analysis. **Note:** Edit this README on GitHub and drag/drop the BulkRNA-Agent-demo.mov file here to embed it.
+> Watch the complete workflow from data upload to enrichment analysis.
 
 ## ✨ Features
 
