@@ -143,25 +143,6 @@ Rscript -e "BiocManager::install(c('DESeq2', 'RNAseqQC'))"
 - [API Docs](docs/API.md) - Python API reference
 - [RNAseqQC Integration](docs/RNASEQQC_INTEGRATION.md) - QC plots guide
 
-## 🤝 Contributing
-
-Contributions welcome! See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
-
-## 📄 License
-
-MIT License - see [LICENSE](LICENSE) file
-
-## 🙏 Acknowledgments
-
-- Built with [Gradio](https://gradio.app/) and [Ollama](https://ollama.ai/)
-- Uses [DESeq2](https://bioconductor.org/packages/DESeq2/), [PyDESeq2](https://github.com/owkin/PyDESeq2), [RNAseqQC](https://cran.r-project.org/package=RNAseqQC)
-- Inspired by [Biomni](https://github.com/yourusername/biomni) framework
-
----
-
-**Questions?** Open an issue or check [docs/TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md)
-- **Design Suggestion**: LLM-powered analysis of metadata structure
-
 ### LLM Routing
 
 The agent automatically routes queries:
