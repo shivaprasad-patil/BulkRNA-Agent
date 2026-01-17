@@ -1,6 +1,5 @@
 """
 BulkRNA Agent - Transcriptomics AI Agent for Bulk RNA-seq Analysis
-Based on the Biomni framework
 
 This agent provides comprehensive bulk RNA-seq analysis including:
 - Quality Control (QC)
