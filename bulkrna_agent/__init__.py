@@ -10,7 +10,7 @@ This agent provides comprehensive bulk RNA-seq analysis including:
 """
 
 __version__ = "0.1.0"
-__author__ = "BulkRNA Agent Team"
+__author__ = "Shivaprasad Patil"
 
 from .config import BulkRNAConfig
 from .agent import BulkRNAAgent

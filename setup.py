@@ -9,7 +9,7 @@ with open("README.md", "r", encoding="utf-8") as fh:
 setup(
     name="bulkrna-agent",
     version="0.1.0",
-    author="BulkRNA Agent Team",
+    author="Shivaprasad Patil",
     description="AI-powered bulk RNA-seq analysis agent",
     long_description=long_description,
     long_description_content_type="text/markdown",
