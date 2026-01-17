@@ -20,8 +20,8 @@ Found a bug or have a feature request?
 
 1. **Fork the repository**
    ```bash
-   git clone https://github.com/yourusername/bulkrna-agent.git
-   cd bulkrna-agent
+   git clone https://github.com/shivaprasad-patil/BulkRNA-Agent.git
+   cd BulkRNA-Agent
    ```
 
 2. **Create a branch**

@@ -13,7 +13,7 @@ setup(
     description="AI-powered bulk RNA-seq analysis agent",
     long_description=long_description,
     long_description_content_type="text/markdown",
-    url="https://github.com/yourusername/bulkrna-agent",
+    url="https://github.com/shivaprasad-patil/BulkRNA-Agent",
     packages=find_packages(),
     classifiers=[
         "Development Status :: 3 - Alpha",
