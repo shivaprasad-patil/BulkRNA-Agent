@@ -142,14 +142,6 @@ Rscript -e "install.packages('BiocManager')"
 Rscript -e "BiocManager::install(c('DESeq2', 'RNAseqQC'))"
 ```
 
-## 📚 Documentation
-
-- [Getting Started](GETTING_STARTED.md) - Detailed installation guide
-- [Quick Reference](QUICKREF.md) - Command cheat sheet
-- [Contributing](CONTRIBUTING.md) - How to contribute
-- [API Docs](docs/API.md) - Python API reference
-- [RNAseqQC Integration](docs/RNASEQQC_INTEGRATION.md) - QC plots guide
-
 ### LLM Routing
 
 The agent automatically routes queries:
