@@ -7,17 +7,17 @@
 1. **data/cache/run_deseq2.R**
    - Added RNAseqQC library loading with graceful fallback
    - Created `qc_plots` subdirectory in output
-   - Added 6 QC plot generation steps after DESeq2 analysis
+   - Added 5 QC plot generation steps after DESeq2 analysis
    - All plots saved as PNG files with appropriate titles
 
 2. **bulkrna_agent/tools.py**
    - Added `get_rnaseqqc_plots()` method to `DifferentialExpressionTool`
-   - Returns paths to all 6 QC plots
+   - Returns paths to all 5 QC plots
    - Checks availability and handles missing plots
 
 3. **bulkrna_agent/web_interface.py**
    - Added `get_rnaseqqc_plots_html()` method
-   - Added 6 new tabs in DE section for QC plots
+   - Added 5 new tabs in DE section for QC plots
    - Added refresh button for QC plots
    - Auto-loads QC plots after DE analysis completes
 
@@ -32,7 +32,6 @@ In the **Differential Expression** tab, after "Top Genes" tab:
 ├── Top Genes
 ├── 📊 QC: Total Counts          [NEW]
 ├── 📊 QC: Library Complexity    [NEW]
-├── 📊 QC: Biotypes              [NEW]
 ├── 📊 QC: Variance Stabilization [NEW]
 ├── 📊 QC: Sample Clustering     [NEW]
 └── 📊 QC: PCA Scatters          [NEW]
@@ -69,7 +68,6 @@ plot_pca_scatters(vsd, n_PCs = 5, color_by = metadata[1], shape_by = metadata[2]
 |-----------|---------|-------------|
 | **Total Counts** | Library size per sample | Identify sequencing depth issues |
 | **Library Complexity** | Gene fraction vs count fraction | Detect library prep problems |
-| **Biotypes** | Distribution of gene types | Check RNA composition |
 | **Variance Stabilization** | Mean-SD relationship | Verify VST normalization |
 | **Sample Clustering** | Hierarchical clustering | See sample relationships |
 | **PCA Scatters** | Multiple PC comparisons | Comprehensive dimensionality view |
@@ -91,7 +89,6 @@ plot_pca_scatters(vsd, n_PCs = 5, color_by = metadata[1], shape_by = metadata[2]
 data/outputs/de_analysis/qc_plots/
 ├── total_counts.png
 ├── library_complexity.png
-├── biotypes.png
 ├── variance_stabilization.png
 ├── sample_clustering.png
 └── pca_scatters.png
@@ -108,14 +105,13 @@ data/outputs/de_analysis/qc_plots/
         ↓
 4. QC plots auto-display in UI
         ↓
-5. Explore in 6 new tabs!
+5. Explore in 5 new tabs!
 ```
 
 ## ✅ Requirements Met
 
 - ✅ `plot_total_counts(dds)` with title "Total sample counts"
 - ✅ `plot_library_complexity(dds)` with title "Library complexity"
-- ✅ `plot_biotypes(dds)` with title "Gene biotypes"
 - ✅ `vsd <- vst(dds)` + `mean_sd_plot(vsd)` for variance stabilization
 - ✅ `plot_sample_clustering(vsd, anno_vars = c(...))` with ALL metadata variables
 - ✅ `plot_pca_scatters(vsd, n_PCs = 5, color_by = ..., shape_by = ...)`

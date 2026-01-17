@@ -191,7 +191,6 @@ Update documentation for:
 - [ ] Caching for LLM responses
 - [ ] Better prompt engineering
 - [ ] More analysis tools
-- [ ] Integration with Galaxy
 - [ ] Batch processing mode
 
 ### Documentation
@@ -258,7 +257,6 @@ test: add tests for enrichment tool
 Contributors will be:
 - Listed in CONTRIBUTORS.md
 - Credited in release notes
-- Acknowledged in publications (for major contributions)
 
 ## License
 

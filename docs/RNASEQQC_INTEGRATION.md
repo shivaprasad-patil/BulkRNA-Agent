@@ -19,23 +19,18 @@ Added RNAseqQC plot generation after DESeq2 analysis:
    - Identifies samples with different complexity patterns
    - Title: "Library complexity"
 
-3. **Gene Biotypes** (`plot_biotypes`)
-   - Stratifies total gene count by different gene biotypes
-   - Shows normalized count for major gene biotypes per sample
-   - Title: "Gene biotypes"
-
-4. **Variance Stabilization** (`mean_sd_plot`)
+3. **Variance Stabilization** (`mean_sd_plot`)
    - Mean-SD plot after variance stabilizing transformation (VST)
    - Verifies that variance is stabilized across expression levels
    - Uses `vst(dds)` transformation
 
-5. **Sample Clustering** (`plot_sample_clustering`)
+4. **Sample Clustering** (`plot_sample_clustering`)
    - Hierarchical clustering heatmap with distance matrix
    - **Automatically uses ALL metadata variables** for annotation
    - Uses Euclidean distance
    - Set seed for reproducible annotation colors
 
-6. **PCA Scatters** (`plot_pca_scatters`)
+5. **PCA Scatters** (`plot_pca_scatters`)
    - Matrix of scatter plots for multiple principal components (5 PCs)
    - Color by first metadata variable, shape by second (if available)
    - Comprehensive view of sample relationships across multiple PCs
@@ -59,7 +54,6 @@ Added `get_rnaseqqc_plots()` method to `DifferentialExpressionTool` class:
 Added 6 new tabs within the Differential Expression section:
 - 📊 QC: Total Counts
 - 📊 QC: Library Complexity
-- 📊 QC: Biotypes
 - 📊 QC: Variance Stabilization
 - 📊 QC: Sample Clustering
 - 📊 QC: PCA Scatters
@@ -102,7 +96,6 @@ data/outputs/de_analysis/qc_plots/
 Individual plot files:
 - `total_counts.png`
 - `library_complexity.png`
-- `biotypes.png`
 - `variance_stabilization.png`
 - `sample_clustering.png`
 - `pca_scatters.png`
@@ -126,7 +119,7 @@ If RNAseqQC is not installed or if gene annotations are missing:
 
 ## Benefits
 
-1. **Comprehensive QC**: Six different perspectives on data quality
+1. **Comprehensive QC**: Five different perspectives on data quality
 2. **Automated Integration**: Plots generated during normal DE workflow
 3. **No Manual Intervention**: All metadata variables used automatically
 4. **Publication-Ready**: High-quality plots suitable for reports/papers
