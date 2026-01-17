@@ -36,8 +36,8 @@ https://github.com/user-attachments/assets/88d02e07-7f4f-4166-b426-4f34d3c0fca6
 
 ```bash
 # Clone repository
-git clone https://github.com/yourusername/Tx_AI_agent.git
-cd Tx_AI_agent
+git clone https://github.com/shivaprasad-patil/BulkRNA-Agent.git
+cd BulkRNA-Agent
 
 # Quick setup with script
 ./install.sh
