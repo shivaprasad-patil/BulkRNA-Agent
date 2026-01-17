@@ -148,36 +148,6 @@ The agent automatically routes queries:
 - **Biomedical LLM**: Gene function, pathways, biological interpretation
 - **Reasoning LLM**: Tool selection, analysis planning, statistical decisions
 
-### Logging
-
-All operations are logged to:
-- Console (INFO level)
-- File: `./logs/bulkrna_agent.log` (detailed logs)
-
-Check logs for debugging:
-```bash
-tail -f logs/bulkrna_agent.log
-```
-
-## 🐛 Troubleshooting
-
-### Ollama Connection Issues
-
-```bash
-# Check if Ollama is running
-curl http://localhost:11434/api/tags
-
-# Start Ollama service
-ollama serve
-```
-
-### Model Not Found
-
-```bash
-# Pull missing models
-ollama pull gpt-oss:20b
-ollama pull cniongolo/biomistral
-```
 
 ## 📚 Documentation
 
@@ -223,5 +193,3 @@ MIT License - see [LICENSE](LICENSE) file
 - [ ] Docker container for easy deployment
 
 ---
-
-**Built with ❤️ for the transcriptomics community**
