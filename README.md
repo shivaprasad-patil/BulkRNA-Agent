@@ -188,6 +188,19 @@ ollama pull cniongolo/biomistral
 - [RNAseqQC Integration](docs/RNASEQQC_INTEGRATION.md) - QC plots guide
 - [Troubleshooting](docs/TROUBLESHOOTING.md) - Common issues and solutions
 
+## 📝 Citation
+
+If you use BulkRNA-Agent in your research, please cite:
+
+```bibtex
+@software{bulkrnaagent2026,
+  title={BulkRNA-Agent: AI-Powered Bulk RNA-seq Analysis Tool},
+  author={Patil, Shivaprasad},
+  year={2026},
+  url={https://github.com/shivaprasad-patil/BulkRNA-Agent}
+}
+```
+
 ## 🤝 Contributing
 
 Contributions welcome! See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
